@@ -18,7 +18,10 @@ import scipy.stats as ss
 import matplotlib
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import Normalize, ListedColormap
+from matplotlib.colorbar import make_axes
+from matplotlib.cm import ScalarMappable, get_cmap
+
 import warnings
 
 _base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -363,7 +366,7 @@ def get_gifti_colortable(G):
     G:				Nibabel gifti object
 
     OUTPUT:
-    A:			     np.ndarray N x 4 of RGB values
+    A:			np.ndarray N x 4 of RGB values
 
     @author: jdiedrichsen
     """
@@ -393,10 +396,22 @@ def get_gifti_anatomical_struct(G):
             anatStruct.append(G._meta.data[i].value)
     return anatStruct
 
+def view_colormap(cmap):
+    """Plot a colormap with its grayscale equivalent"""
+#     viridis = plt.cm.get_cmap('viridis', 12)
+#     colors = viridis(np.arange(viridis.N))
+    cmap2 = plt.cm.get_cmap(cmap)
+    colors = cmap2(np.arange(cmap2.N))    
+    
+    fig, ax = plt.subplots(2, figsize=(6, 2),
+                           subplot_kw=dict(xticks=[], yticks=[]))
+    ax[0].imshow([colors], extent=[0, 10, 0, 1])
+#     ax[1].imshow([grayscale], extent=[0, 10, 0, 1])
+
 def plot(data, surf = None, underlay = os.path.join(_surf_dir,'SUIT.shape.gii'),
         undermap = 'Greys', underscale = [-1, 0.5], overlay_type = 'func', threshold = None,
         cmap = None, cscale = None, borders = os.path.join(_surf_dir,'borders.txt'), alpha = 1.0,
-        outputfile = None, render='matplotlib'):
+        outputfile = None, colorbar = True, render='matplotlib'):
     """
     Visualised cerebellar cortical acitivty on a flatmap in a matlab window
     INPUT:
@@ -425,6 +440,8 @@ def plot(data, surf = None, underlay = os.path.join(_surf_dir,'SUIT.shape.gii'),
             Opacity of the overlay (default: 1)
         outputfile (str)
             Name / path to file to save figure (default None)
+        colorbar (bool)
+            Flag determining whether to include a colorbar (default True)
         render (str)
             Renderer for graphic display 'matplot' / 'opengl'. Dafault is matplotlib
     OUTPUT:
@@ -443,7 +460,7 @@ def plot(data, surf = None, underlay = os.path.join(_surf_dir,'SUIT.shape.gii'),
     # Load underlay and assign color
     if type(underlay) is not np.ndarray:
         underlay = nb.load(underlay).darrays[0].data
-    underlay_color = _map_color(faces, underlay, underscale, undermap)
+    underlay_color, _ = _map_color(faces, underlay, underscale, undermap)
 
     # Load the overlay if it's a string
     if type(data) is str:
@@ -465,7 +482,10 @@ def plot(data, surf = None, underlay = os.path.join(_surf_dir,'SUIT.shape.gii'),
         data[i]=0
 
     # map the overlay to the faces
-    overlay_color  = _map_color(faces, data, cscale, cmap, threshold)
+    overlay_color, color_map  = _map_color(faces, data, cscale, cmap, threshold)
+    
+    # get normalized values for colorbar
+    cmap_norm = Normalize(np.nanmin(data), np.nanmax(data))
 
     # Combine underlay and overlay: For Nan overlay, let underlay shine through
     face_color = underlay_color * (1-alpha) + overlay_color * alpha
@@ -476,9 +496,10 @@ def plot(data, surf = None, underlay = os.path.join(_surf_dir,'SUIT.shape.gii'),
     # If present, get the borders
     if borders is not None:
         borders = np.genfromtxt(borders, delimiter=',')
-
+        
     # Render with Matplotlib
-    ax = _render_matplotlib(vertices, faces, face_color, borders)
+    ax = _render_matplotlib(vertices, faces, face_color, borders, colorbar = colorbar, cmap = color_map, norm = cmap_norm)
+
     return ax
 
 def _map_color(faces, data, scale, cmap=None, threshold = None):
@@ -538,16 +559,17 @@ def _map_color(faces, data, scale, cmap=None, threshold = None):
 
     # Map the color
     color_data = cmap(face_value)
-
+    
     # Set missing data 0 for int or NaN for float to NaN
     if data.dtype.kind == 'f':
         color_data[np.isnan(face_value),:]=np.nan
     elif data.dtype.kind == 'i':
         color_data[face_value==0,:]=np.nan
-    return color_data
+    return color_data, cmap
 
-def _render_matplotlib(vertices,faces,face_color, borders):
+def _render_matplotlib(vertices,faces,face_color, borders, colorbar = True, **kwargs):
     """
+    
     Render the data in matplotlib: This is segmented to allow for openGL renderer
 
     Input:
@@ -557,6 +579,10 @@ def _render_matplotlib(vertices,faces,face_color, borders):
             Array of Faces
         face_color (nd.array)
             RGBA array of color and alpha of all vertices
+        borders
+            Drawing borders for the lobules (None if you don't want borders)
+        colorbar (bool)
+            if True, adds the colorbar (default True)
     """
     patches = []
     for i in range(faces.shape[0]):
@@ -576,6 +602,19 @@ def _render_matplotlib(vertices,faces,face_color, borders):
     ax.set_ylim(yrang[0],yrang[1])
     ax.axis('equal')
     ax.axis('off')
+
+    if colorbar:
+        cmap = kwargs['cmap']
+        norm = kwargs['norm']
+        cmap_obj       = get_cmap(cmap) # get colormap
+        # make a scalar mappable object 
+        proxy_mappable = ScalarMappable(cmap=cmap_obj, norm=norm)
+        
+        # make axis for the colorbar
+        cax, kw = make_axes(ax, location='right', shrink = 0.7)
+        cbar    = plt.colorbar(proxy_mappable, cax=cax,
+                               spacing='uniform',
+                               orientation='vertical')
 
     if borders is not None:
         ax.plot(borders[:,0],borders[:,1],color='k',
