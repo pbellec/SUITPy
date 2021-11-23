@@ -14,8 +14,8 @@ import os
 import sys
 import nibabel as nb
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import scipy.stats as ss
-import matplotlib
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import ListedColormap
@@ -27,29 +27,33 @@ import warnings
 _base_dir = os.path.dirname(os.path.abspath(__file__))
 _surf_dir = os.path.join(_base_dir, 'surfaces')
 
-def affine_transform(x1, x2, x3, M):
+def affine_transform(
+    x1, 
+    x2, 
+    x3, 
+    M
+    ):
     """
     Returns affine transform of x
 
     Args:
         x1 (np-array):
             X-coordinate of original
-        x2 (np-array): 
+        x2 (np-array):
             Y-coordinate of original
-        x3 (np-array): 
+        x3 (np-array):
             Z-coordinate of original
-        M (2d-array): 
+        M (2d-array):
             4x4 transformation matrix
 
     Returns:
-        x1 (np-array): 
+        x1 (np-array):
             X-coordinate of transform
-        x2 (np-array): 
+        x2 (np-array):
             Y-coordinate of transform
-        x3 (np-array): 
+        x3 (np-array):
             Z-coordinate of transform
-        transformed coordinates: 
-            same form as x1,x2,x3
+
     """
     y1 = np.multiply(M[0,0],x1) + np.multiply(M[0,1],x2) + np.multiply(M[0,2],x3) + M[0,3]
     y2 = np.multiply(M[1,0],x1) + np.multiply(M[1,1],x2) + np.multiply(M[1,2],x3) + M[1,3]
@@ -57,7 +61,7 @@ def affine_transform(x1, x2, x3, M):
     return (y1,y2,y3)
 
 def coords_to_voxelidxs(
-    coords, 
+    coords,
     vol_def
     ):
     """
@@ -70,8 +74,8 @@ def coords_to_voxelidxs(
             Nibabel object with attributes .affine (4x4 voxel to coordinate transformation matrix from the images to be sampled (1-based)) and shape (1x3 volume dimension in voxels)
 
     Returns:
-        linidxsrs (N-array or PxQ matrix):
-            Linear voxel indices
+        linidxsrs (np.ndarray):
+            N-array or PxQ matrix of Linear voxel indices
     """
     mat = np.array(vol_def.affine)
 
@@ -104,16 +108,16 @@ def coords_to_voxelidxs(
     return ijk
 
 def vol_to_surf(
-    volumes, 
-    space='SUIT', 
-    ignore_zeros=False, 
-    depths=[0,0.2,0.4,0.6,0.8,1.0], 
-    stats='nanmean', 
-    outer_surf_gifti=None, 
+    volumes,
+    space='SUIT',
+    ignore_zeros=False,
+    depths=[0,0.2,0.4,0.6,0.8,1.0],
+    stats='nanmean',
+    outer_surf_gifti=None,
     inner_surf_gifti=None
     ):
-    """
-    Maps volume data onto a surface, defined by inner and outer surface.
+    """Maps volume data onto a surface, defined by inner and outer surface.
+
     Function enables mapping of volume-based data onto the vertices of a
     surface. For each vertex, the function samples the volume along the line
     connecting the two surfaces. The points along the line
@@ -228,13 +232,13 @@ def vol_to_surf(
     return mapped_data
 
 def make_func_gifti(
-    data, 
-    anatomical_struct='Cerebellum', 
+    data,
+    anatomical_struct='Cerebellum',
     column_names=[]
     ):
-    """
-    Generates a function GiftiImage from a numpy array
-       @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
+    """Generates a function GiftiImage from a numpy array
+
+    @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
 
     Args:
         data (np.array):
@@ -243,8 +247,9 @@ def make_func_gifti(
             Anatomical Structure for the Meta-data default= 'Cerebellum'
         column_names (list):
             List of strings for names for columns
+
     Returns:
-        FuncGifti (functional GiftiImage)
+        FuncGifti (GiftiImage): functional Gifti Image
     """
     num_verts, num_cols = data.shape
     #
@@ -281,29 +286,30 @@ def make_func_gifti(
     return gifti
 
 def make_label_gifti(
-                    data, 
-                    anatomical_struct='Cerebellum', 
-                    label_names=[], 
+                    data,
+                    anatomical_struct='Cerebellum',
+                    label_names=[],
                     column_names=[],
                     label_RGBA=[]
                     ):
-    """
-    Generates a label GiftiImage from a numpy array
-       @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
+    """Generates a label GiftiImage from a numpy array
+
+    @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
 
     Args:
         data (np.array):
              num_vert x num_col data
         anatomical_struct (string):
             Anatomical Structure for the Meta-data default= 'Cerebellum'
-        label_names (list): 
+        label_names (list):
             List of strings for label names
         column_names (list):
             List of strings for names for columns
         label_RGBA (list):
             List of rgba vectors
+
     Returns:
-        gifti (label GiftiImage)
+        gifti (GiftiImage): Label gifti image
 
     """
     num_verts, num_cols = data.shape
@@ -347,7 +353,7 @@ def make_label_gifti(
     E_all = []
     for (label, rgba, name) in zip(num_labels, label_RGBA, label_names):
         E = nb.gifti.gifti.GiftiLabel()
-        E.key = label 
+        E.key = label
         E.label= name
         E.red = rgba[0]
         E.green = rgba[1]
@@ -372,60 +378,71 @@ def make_label_gifti(
     return gifti
 
 def get_gifti_column_names(
-    G
+    gifti
     ):
     """
-    Returns the column names from a functional gifti file.
+    Returns the column names from a gifti file (*.label.gii or *.func.gii)
 
     Args:
-        G (gifti image):
+        gifti (gifti image):
             Nibabel Gifti image 
 
     Returns:
         names (list):
             List of column names from gifti object attribute data arrays
 
-    @author: jdiedrichsen 
     """
-    N = len(G.darrays)
+    N = len(gifti.darrays)
     names = []
     for n in range(N):
-        for i in range(len(G.darrays[n].meta.data)):
-            if 'Name' in G.darrays[n].meta.data[i].name:
-                names.append(G.darrays[n].meta.data[i].value)
+        for i in range(len(gifti.darrays[n].meta.data)):
+            if 'Name' in gifti.darrays[n].meta.data[i].name:
+                names.append(gifti.darrays[n].meta.data[i].value)
     return names
 
 def get_gifti_colortable(
-    G
+    gifti,
+    ignore_0=True
     ):
-    """
-    Returns the RGBA color table from a label gifti.
+    """Returns the RGBA color table and matplotlib cmap from gifti object (*.label.gii)
 
     Args:
-        G (gifti image):
+        gifti (gifti image):
             Nibabel Gifti image 
 
     Returns:
-        A (np.ndarray):
+        rgba (np.ndarray):
             N x 4 of RGB values
+        
+        cmap (mpl obj):
+            matplotlib colormap
+
+    @author: maedbhking
     """
-    labels = G.labeltable.labels
-    N = len(labels)
-    colors = np.zeros((N,4))
-    for i in range(N):
-        colors[i,:]=labels[i].rgba
-    return colors
+    labels = gifti.labeltable.labels
+
+    rgba = np.zeros((len(labels),4))
+    for i,label in enumerate(labels):
+        rgba[i,] = labels[i].rgba
+    
+    if ignore_0:
+        rgba = rgba[1:]
+        labels = labels[1:]
+
+    cmap = LinearSegmentedColormap.from_list('mylist', rgba, N=len(rgba))
+    mpl.cm.register_cmap("mycolormap", cmap)
+
+    return rgba, cmap
 
 def get_gifti_anatomical_struct(
-    G
+    gifti
     ):
     """
-    Returns the primary anatomical structure for a gifti object.
+    Returns the primary anatomical structure for a gifti object (*.label.gii or *.func.gii)
 
     Args:
-        G (gifti image):
+        gifti (gifti image):
             Nibabel Gifti image 
-
 
     Returns:
         anatStruct (string):
@@ -433,12 +450,66 @@ def get_gifti_anatomical_struct(
 
     @author: jdiedrichsen (Python conversion: switt)
     """
-    N = len(G._meta.data)
+    N = len(gifti._meta.data)
     anatStruct = []
     for i in range(N):
-        if 'AnatomicalStructurePrimary' in G._meta.data[i].name:
-            anatStruct.append(G._meta.data[i].value)
+        if 'AnatomicalStructurePrimary' in gifti._meta.data[i].name:
+            anatStruct.append(gifti._meta.data[i].value)
     return anatStruct
+
+def get_gifti_labels(
+    gifti
+    ):
+    """Returns labels from gifti object (*.label.gii)
+
+    Args:
+        gifti (gifti image):
+            Nibabel Gifti image 
+
+    Returns:
+        labels (list):
+            labels from gifti object
+    @author: maedbhking
+    """
+    # labels = img.labeltable.get_labels_as_dict().values()
+    label_dict = gifti.labeltable.get_labels_as_dict()
+    labels = list(label_dict.values())
+    return labels
+
+def save_colorbar(
+    gifti, 
+    outpath
+    ):
+    """plots colorbar for gifti object (*.label.gii)
+        
+    Args:
+        gifti (gifti image):
+            Nibabel Gifti image 
+        outpath (str):
+            outpath for colorbar
+    
+    @author: maedbhking
+    """
+    _, ax = plt.subplots(figsize=(1,10)) # figsize=(1, 10)
+
+    _, cmap = get_gifti_colortable(gifti)
+    labels = get_gifti_labels(gifti)
+
+    bounds = np.arange(cmap.N + 1)
+
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb3 = mpl.colorbar.ColorbarBase(ax, cmap=cmap.reversed(cmap), 
+                                    norm=norm,
+                                    ticks=bounds,
+                                    format='%s',
+                                    orientation='vertical',
+                                    )
+    cb3.set_ticklabels(labels[::-1])  
+    cb3.ax.tick_params(size=0)
+    cb3.set_ticks(bounds+.5)
+    cb3.ax.tick_params(axis='y', which='major', labelsize=30)
+
+    plt.savefig(outpath, bbox_inches='tight', dpi=150)
 
 def plot(
         data, surf=None, underlay='SUIT.shape.gii',
@@ -447,7 +518,7 @@ def plot(
         outputfile=None, render='matplotlib', new_figure=False, colorbar=False, cbar_tick_format="%.2g"
         ):
     """
-    Visualised cerebellar cortical acmake tivty on a flatmap in a matlab window
+    Visualize cerebellar activity on a flatmap
 
     Args:
         data (np.array, giftiImage, or name of gifti file):
@@ -480,13 +551,14 @@ def plot(
         render (str)
             Renderer for graphic display 'matplot' / 'opengl'. Dafault is matplotlib
         new_figure (bool)
-            By default, flatmap.plot renders the color map into matplotlib's current axis. It new_figure is set to True is will create a new figure 
+            By default, flatmap.plot renders the color map into matplotlib's current axis. It new_figure is set to True is will create a new figure
         colorbar (bool)
             By default, colorbar is not plotted into matplotlib's current axis (or new figure if new_figure is set to True)
         cbar_tick_format : str, optional
             Controls how to format the tick labels of the colorbar.
             Ex: use "%i" to display as integers.
             Default='%.2g' for scientific notation.
+
     Returns:
         ax (matplotlib.axis)
             If render is matplotlib, the function returns the axis
@@ -509,7 +581,7 @@ def plot(
     # If it is a giftiImage, figure out colormap
     if type(data) is nb.gifti.gifti.GiftiImage:
         if overlay_type == 'label':
-            cmap = get_gifti_colortable(data)
+            _, cmap = get_gifti_colortable(data)
             if label_names is None:
                 labels = data.labeltable
                 label_names = list(labels.get_labels_as_dict().values())
@@ -545,11 +617,9 @@ def plot(
 
     # Load underlay and assign color
     if type(underlay) is not np.ndarray:
-        if os.path.isfile(underlay):
-            underlay = nb.load(underlay).darrays[0].data
-        else: 
+        if not os.path.isfile(underlay):
             underlay = os.path.join(os.path.join(_surf_dir, underlay))
-            underlay = nb.load(underlay).darrays[0].data
+        underlay = nb.load(underlay).darrays[0].data
     underlay_color,_,_ = _map_color(faces=faces, data=underlay, cscale=underscale, cmap=undermap)
 
     # Combine underlay and overlay: For Nan overlay, let underlay shine through
@@ -560,10 +630,9 @@ def plot(
 
     # If present, get the borders
     if borders is not None:
-        if os.path.isfile(underlay):
-            borders = np.genfromtxt(borders, delimiter=',')
-        else: 
+        if not os.path.isfile(borders):
             borders = os.path.join(os.path.join(_surf_dir, borders))
+        borders = np.genfromtxt(borders, delimiter=',')
 
     # Render with Matplotlib
     ax = _render_matplotlib(vertices, faces, face_color, borders, new_figure)
@@ -574,14 +643,14 @@ def plot(
             cbar = _colorbar_label(ax, cmap, cscale, cbar_tick_format, label_names)
         elif overlay_type=='func':
             cbar = _colorbar_func(ax, cmap, cscale, cbar_tick_format)
-    
+
     return ax
 
 def _map_color(
-    faces, 
-    data, 
-    cscale=None, 
-    cmap=None, 
+    faces,
+    data,
+    cscale=None,
+    cmap=None,
     threshold=None
     ):
     """
@@ -658,10 +727,10 @@ def _map_color(
     return color_data, cmap, cscale
 
 def _colorbar_label(
-    ax, 
-    cmap, 
-    cscale, 
-    cbar_tick_format, 
+    ax,
+    cmap,
+    cscale,
+    cbar_tick_format,
     label_names
     ):
     """adds colorbar to figure
@@ -703,9 +772,9 @@ def _colorbar_label(
     return cbar
 
 def _colorbar_func(
-    ax, 
-    cmap, 
-    cscale, 
+    ax,
+    cmap,
+    cscale,
     cbar_tick_format
     ):
     """adds colorbar to figure
@@ -721,6 +790,8 @@ def _colorbar_func(
             Controls how to format the tick labels of the colorbar.
             Ex: use "%i" to display as integers.
             Default='%.2g' for scientific notation.
+
+    @author: maedbhking
     """
     nb_ticks = 5
     # ...unless we are dealing with integers with a small range
@@ -729,7 +800,7 @@ def _colorbar_func(
         ticks = np.arange(cscale[0], cscale[1] + 1)
     else:
         ticks = np.linspace(cscale[0], cscale[1], nb_ticks)
-    
+
     # set up colorbar
     cax, kw = make_axes(ax, location='right', fraction=.15,
                         shrink=.5, pad=.0, aspect=10.)
@@ -745,10 +816,10 @@ def _colorbar_func(
     return cbar
 
 def _render_matplotlib(
-    vertices, 
-    faces, 
-    face_color, 
-    borders, 
+    vertices,
+    faces,
+    face_color,
+    borders,
     new_figure
     ):
     """
