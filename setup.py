@@ -56,7 +56,7 @@ MAINTAINER = 'Maedbh King'
 MAINTAINER_EMAIL = 'maedbhking@berkeley.edu'
 URL = 'https://github.com/DiedrichsenLab/SUITPy'
 LICENSE = 'MIT'
-DOWNLOAD_URL = 'https://suitpy.readthedocs.io/'
+DOWNLOAD_URL = 'https://github.com/DiedrichsenLab/SUITPy/archive/refs/tags/v1.0.3.tar.gz'
 VERSION = _VERSION_GLOBALS['__version__']
 
 

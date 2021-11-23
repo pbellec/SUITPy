@@ -129,8 +129,6 @@ def vol_to_surf(
     the variable 'stats'. For functional activation, use 'mean' or
     'nanmean'. For discrete label data, use 'mode'.
 
-    @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
-
     Args:
         volumes (list or nib obj):
             List of filenames/nib objs, or nib obj to be mapped
@@ -238,8 +236,6 @@ def make_func_gifti(
     ):
     """Generates a function GiftiImage from a numpy array
 
-    @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
-
     Args:
         data (np.array):
              num_vert x num_col data
@@ -293,8 +289,6 @@ def make_label_gifti(
                     label_RGBA=[]
                     ):
     """Generates a label GiftiImage from a numpy array
-
-    @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt)
 
     Args:
         data (np.array):
@@ -377,9 +371,7 @@ def make_label_gifti(
     gifti.labeltable.labels.extend(E_all)
     return gifti
 
-def get_gifti_column_names(
-    gifti
-    ):
+def get_gifti_column_names(gifti):
     """
     Returns the column names from a gifti file (*.label.gii or *.func.gii)
 
@@ -400,10 +392,7 @@ def get_gifti_column_names(
                 names.append(gifti.darrays[n].meta.data[i].value)
     return names
 
-def get_gifti_colortable(
-    gifti,
-    ignore_0=True
-    ):
+def get_gifti_colortable(gifti,ignore_0=True):
     """Returns the RGBA color table and matplotlib cmap from gifti object (*.label.gii)
 
     Args:
@@ -417,7 +406,6 @@ def get_gifti_colortable(
         cmap (mpl obj):
             matplotlib colormap
 
-    @author: maedbhking
     """
     labels = gifti.labeltable.labels
 
@@ -434,9 +422,7 @@ def get_gifti_colortable(
 
     return rgba, cmap
 
-def get_gifti_anatomical_struct(
-    gifti
-    ):
+def get_gifti_anatomical_struct(gifti):
     """
     Returns the primary anatomical structure for a gifti object (*.label.gii or *.func.gii)
 
@@ -448,7 +434,6 @@ def get_gifti_anatomical_struct(
         anatStruct (string):
             AnatomicalStructurePrimary attribute from gifti object
 
-    @author: jdiedrichsen (Python conversion: switt)
     """
     N = len(gifti._meta.data)
     anatStruct = []
@@ -457,9 +442,7 @@ def get_gifti_anatomical_struct(
             anatStruct.append(gifti._meta.data[i].value)
     return anatStruct
 
-def get_gifti_labels(
-    gifti
-    ):
+def get_gifti_labels(gifti):
     """Returns labels from gifti object (*.label.gii)
 
     Args:
@@ -469,7 +452,6 @@ def get_gifti_labels(
     Returns:
         labels (list):
             labels from gifti object
-    @author: maedbhking
     """
     # labels = img.labeltable.get_labels_as_dict().values()
     label_dict = gifti.labeltable.get_labels_as_dict()
@@ -488,7 +470,6 @@ def save_colorbar(
         outpath (str):
             outpath for colorbar
     
-    @author: maedbhking
     """
     _, ax = plt.subplots(figsize=(1,10)) # figsize=(1, 10)
 
@@ -563,7 +544,6 @@ def plot(
         ax (matplotlib.axis)
             If render is matplotlib, the function returns the axis
 
-        @author joern.diedrichsen@googlemail.com, Feb 2019 (Python conversion: switt, maedbhking)
     """
     # default directory
     if surf is None:
@@ -671,7 +651,6 @@ def _map_color(
              only data x<lower and x>upper will be plotted
             if one value is given (-inf) is assumed for the lower
 
-        @author: maedbhking
     """
 
     # When continuous data, scale and threshold
@@ -749,7 +728,9 @@ def _colorbar_label(
         label_names (list)
             List of strings for label names
 
-    @author: maedbhking
+    Returns:
+        cbar (matplotlib.colorbar)
+            Colorbar object
     """
     # check if there is a 0 label and adjust colorbar accordingly
     if cscale[0]==0:
@@ -815,13 +796,7 @@ def _colorbar_func(
 
     return cbar
 
-def _render_matplotlib(
-    vertices,
-    faces,
-    face_color,
-    borders,
-    new_figure
-    ):
+def _render_matplotlib(vertices,faces,face_color,borders,new_figure):
     """
     Render the data in matplotlib: This is segmented to allow for openGL renderer
 
@@ -837,7 +812,9 @@ def _render_matplotlib(
         new_figure (bool)
             Create new Figure or render in currrent axis
 
-    @author: jdiedrichsen, maedbhking
+    Returns:
+        ax (matplotlib.axes)
+            Axis that was used to render the axis
     """
     patches = []
     for i in range(faces.shape[0]):
